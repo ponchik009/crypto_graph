@@ -1,6 +1,6 @@
 import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 
-import { GraphDto } from "../../types/graph.dto";
+import { GraphDto, TransactionViewType } from "../../types/graph.dto";
 import { RootState } from "../store";
 
 export interface GraphState {
@@ -12,6 +12,8 @@ export interface GraphState {
   tooltipLeft: number;
   tooltipTop: number;
   tooltipValue: string;
+
+  transactionViewType: TransactionViewType;
 }
 
 const initialState: GraphState = {
@@ -23,6 +25,8 @@ const initialState: GraphState = {
   tooltipLeft: 0,
   tooltipTop: 0,
   tooltipValue: "",
+
+  transactionViewType: "usdt",
 };
 
 export const graphSlice = createSlice({
@@ -46,10 +50,17 @@ export const graphSlice = createSlice({
       state.tooltipTop = payload.payload.top;
       state.tooltipValue = payload.payload.value;
     },
+    updateTransactionViewType(
+      state,
+      payload: PayloadAction<TransactionViewType>
+    ) {
+      state.transactionViewType = payload.payload;
+    },
   },
 });
 
-export const { updateInputValue, toggleTooltip } = graphSlice.actions;
+export const { updateInputValue, toggleTooltip, updateTransactionViewType } =
+  graphSlice.actions;
 
 export const selectData = (state: RootState) => state.graph.data;
 export const selectInputValue = (state: RootState) => state.graph.inputValue;
@@ -59,5 +70,7 @@ export const selectTooltipState = (state: RootState) => ({
   top: state.graph.tooltipTop,
   value: state.graph.tooltipValue,
 });
+export const selectTransactionViewType = (state: RootState) =>
+  state.graph.transactionViewType;
 
 export default graphSlice.reducer;

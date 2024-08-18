@@ -1,4 +1,4 @@
-import { Link, Node } from "./types/graph.dto";
+import { Link, Node, TransactionViewType } from "./types/graph.dto";
 
 export const RADIUS = 30;
 
@@ -7,27 +7,63 @@ export const drawNetwork = (
   width: number,
   height: number,
   nodes: Node[],
-  links: Link[]
+  links: Link[],
+  viewType: TransactionViewType = "usdt"
 ) => {
   context.clearRect(0, 0, width, height);
 
-  links.forEach((link: Link) => {
-    context.beginPath();
+  const linksMap = new Map<string, number>();
 
+  links.forEach((link: Link) => {
     link.source = link.source as Node;
     link.target = link.target as Node;
 
-    context.moveTo(link.source.x!, link.source.y!);
-    context.lineTo(link.target.x!, link.target.y!);
+    const key = `${link.source.id}_${link.target.id}`;
+    const reversedKey = `${link.target.id}_${link.source.id}`;
+
+    const offset =
+      ((linksMap.get(key) || 0) + (linksMap.get(reversedKey) || 0)) * RADIUS;
+
+    context.beginPath();
+
+    let sourceX = link.source.x!;
+    let sourceY = link.source.y!;
+    let targetX = link.target.x!;
+    let targetY = link.target.y!;
+
+    if (!link.source.isMain) {
+      sourceY = link.source.y! - RADIUS + offset + 5;
+      context.moveTo(sourceX, sourceY);
+    } else {
+      context.moveTo(sourceX, sourceY);
+    }
+    if (!link.target.isMain) {
+      targetY = link.target.y! - RADIUS + offset + 5;
+      context.lineTo(targetX, targetY);
+    } else {
+      context.lineTo(targetX, targetY);
+    }
     context.stroke();
 
+    if (!linksMap.has(key)) {
+      linksMap.set(key, 0);
+    }
+
+    linksMap.set(key, linksMap.get(key)! + 1);
+
     // Label
-    const midX = (link.source.x! + link.target.x!) / 2;
-    const midY = (link.source.y! + link.target.y!) / 2;
-    const text = Math.round(link.value);
+    let midX = (sourceX + targetX) / 2;
+    let midY = (sourceY + targetY) / 2;
+
+    const text =
+      viewType === "usdt"
+        ? `${Math.round(link.value).toFixed(2)} USDT`
+        : `${link.tokens_amount
+            .map((t) => `${t.amount.toFixed(2)} ${t.name}`)
+            .join(" | ")}`;
     context.fillStyle = "black";
     context.font = "14px Arial"; // Set label font size
-    context.fillText(String(text), midX, midY);
+    context.fillText(text, midX, midY);
   });
 
   nodes.forEach((node: Node) => {

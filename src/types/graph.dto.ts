@@ -22,3 +22,5 @@ export type GraphDto = {
   nodes: Node[];
   links: Link[];
 };
+
+export type TransactionViewType = "usdt" | "token";

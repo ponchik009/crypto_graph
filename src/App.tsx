@@ -3,14 +3,17 @@ import { useSelector, useDispatch } from "react-redux";
 
 import "./App.css";
 
-import { NetworkDiagram } from "./components/NetworkDiagram/NetworkDiagram";
-import { Labels } from "./components";
-
 import {
   selectInputValue,
   updateInputValue,
 } from "./store/graphReducer/graphReducer";
-import { Tooltip } from "./components/Tooltip/Tooltip";
+
+import {
+  Labels,
+  Tooltip,
+  NetworkDiagram,
+  TransactionViewTypeRadioGroup,
+} from "./components";
 
 function App() {
   const dispatch = useDispatch();
@@ -23,6 +26,9 @@ function App() {
   return (
     <div className="App">
       <input type="text" value={inputValue} onChange={handleInputChange} />
+
+      <TransactionViewTypeRadioGroup />
+
       <Labels />
 
       <NetworkDiagram

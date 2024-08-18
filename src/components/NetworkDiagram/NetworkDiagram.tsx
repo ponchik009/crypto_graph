@@ -4,9 +4,10 @@ import * as d3 from "d3";
 
 import { RADIUS, drawNetwork } from "../../drawNetwork";
 
-import { GraphDto, Link, Node } from "../../types/graph.dto";
+import { Link, Node } from "../../types/graph.dto";
 import {
   selectInputValue,
+  selectTransactionViewType,
   toggleTooltip,
   updateInputValue,
 } from "../../store/graphReducer/graphReducer";
@@ -21,6 +22,8 @@ export const NetworkDiagram = ({ width, height }: NetworkDiagramProps) => {
   const dispatch = useDispatch();
 
   const inputValue = useSelector(selectInputValue);
+  const transactionViewType = useSelector(selectTransactionViewType);
+
   const { data } = useGetGraphByAddressQuery(inputValue);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -81,14 +84,18 @@ export const NetworkDiagram = ({ width, height }: NetworkDiagramProps) => {
         dispatch(
           toggleTooltip({
             show: true,
-            left: coords.x,
-            top: coords.y,
-            value: `${node.id}\n${node.name}\n${node.tokens
-              .map(
-                (token) =>
-                  `${token.amount} ${token.name} / ${token.usdt_amount} usdt`
-              )
-              .join("\n")}`,
+            left: coords.x - RADIUS,
+            top: coords.y - RADIUS,
+            value: `${node.id}\n${node.name || "empty name"}\n${
+              node.tokens.length
+                ? node.tokens
+                    .map(
+                      (token) =>
+                        `${token.amount} ${token.name} / ${token.usdt_amount} usdt`
+                    )
+                    .join("\n")
+                : "no tokens"
+            }`,
           })
         );
       } else {
@@ -150,7 +157,7 @@ export const NetworkDiagram = ({ width, height }: NetworkDiagramProps) => {
 
       // at each iteration of the simulation, draw the network diagram with the new node positions
       .on("tick", () => {
-        drawNetwork(context, width, height, nodes, links);
+        drawNetwork(context, width, height, nodes, links, transactionViewType);
       });
   }, [width, height, nodes, links]);
 
