@@ -1,24 +1,32 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import { useSelector, useDispatch } from "react-redux";
+
+import "./App.css";
+
+import { NetworkDiagram } from "./components/NetworkDiagram/NetworkDiagram";
+import { Labels } from "./components";
+
+import {
+  selectInputValue,
+  updateInputValue,
+} from "./store/graphReducer/graphReducer";
+import { useGetGraphByAddressQuery } from "./api/api";
 
 function App() {
+  const dispatch = useDispatch();
+  const inputValue = useSelector(selectInputValue);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(updateInputValue(e.target.value));
+  };
+
+  const { data } = useGetGraphByAddressQuery(inputValue);
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <input type="text" value={inputValue} onChange={handleInputChange} />
+      <Labels />
+      {data && <NetworkDiagram data={data} width={1200} height={800} />}
     </div>
   );
 }
