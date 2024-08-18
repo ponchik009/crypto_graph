@@ -1,36 +1,34 @@
-import * as d3 from "d3";
 import { useEffect, useRef } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import * as d3 from "d3";
+
 import { RADIUS, drawNetwork } from "../../drawNetwork";
 
 import { GraphDto, Link, Node } from "../../types/graph.dto";
+import {
+  selectInputValue,
+  toggleTooltip,
+  updateInputValue,
+} from "../../store/graphReducer/graphReducer";
+import { useGetGraphByAddressQuery } from "../../api/api";
 
 type NetworkDiagramProps = {
   width: number;
   height: number;
-  data: GraphDto;
 };
 
-function getNodesMap(nodes: Node[]) {
-  const map = new Map();
+export const NetworkDiagram = ({ width, height }: NetworkDiagramProps) => {
+  const dispatch = useDispatch();
 
-  nodes.forEach((node) => {
-    map.set(node.id, node);
-  });
-
-  return map;
-}
-
-export const NetworkDiagram = ({
-  width,
-  height,
-  data,
-}: NetworkDiagramProps) => {
-  // The force simulation mutates links and nodes, so create a copy first
-  // Node positions are initialized by d3
-  const links: Link[] = data.links.map((d) => ({ ...d }));
-  const nodes: Node[] = data.nodes.map((d) => ({ ...d }));
+  const inputValue = useSelector(selectInputValue);
+  const { data } = useGetGraphByAddressQuery(inputValue);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // The force simulation mutates links and nodes, so create a copy first
+  // Node positions are initialized by d3
+  const links: Link[] = (data || { links: [] }).links.map((d) => ({ ...d }));
+  const nodes: Node[] = (data || { nodes: [] }).nodes.map((d) => ({ ...d }));
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -39,33 +37,80 @@ export const NetworkDiagram = ({
       return;
     }
 
-    const handleClick = (event: HTMLElementEventMap["click"]) => {
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width; // relationship bitmap vs. element for X
-      const scaleY = canvas.height / rect.height; // relationship bitmap vs. element for Y
+    const handleCanvasNodeAction = (
+      callback: (node: Node | null, coords?: { x: number; y: number }) => void
+    ) => {
+      return (event: HTMLElementEventMap["click"]) => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width; // relationship bitmap vs. element for X
+        const scaleY = canvas.height / rect.height; // relationship bitmap vs. element for Y
 
-      const mouseX = (event.clientX - rect.left) * scaleX; // scale mouse coordinates after they have  been adjusted to be relative to element
-      const mouseY = (event.clientY - rect.top) * scaleY;
+        const mouseX = (event.clientX - rect.left) * scaleX; // scale mouse coordinates after they have  been adjusted to be relative to element
+        const mouseY = (event.clientY - rect.top) * scaleY;
 
-      nodes.forEach((node) => {
-        if (!node.x || !node.y) {
-          return;
+        let result = false;
+
+        nodes.forEach((node) => {
+          if (!node.x || !node.y) {
+            return;
+          }
+
+          const distance = Math.sqrt(
+            Math.pow(node.x - mouseX, 2) + Math.pow(node.y - mouseY, 2)
+          );
+          if (distance < RADIUS) {
+            callback(node, { x: mouseX, y: mouseY });
+            result = true;
+          }
+        });
+
+        if (!result) {
+          callback(null);
         }
-
-        const distance = Math.sqrt(
-          Math.pow(node.x - mouseX, 2) + Math.pow(node.y - mouseY, 2)
-        );
-        if (distance < RADIUS) {
-          alert("Clicked on node: " + node.id + " group: " + node.group);
-        }
-      });
+      };
     };
-    canvas.addEventListener("click", handleClick);
+
+    const handleNodeClick = handleCanvasNodeAction((node) => {
+      if (node) {
+        dispatch(updateInputValue(node!.id));
+      }
+    });
+
+    const handleNodeHover = handleCanvasNodeAction((node, coords) => {
+      if (node && coords) {
+        dispatch(
+          toggleTooltip({
+            show: true,
+            left: coords.x,
+            top: coords.y,
+            value: `${node.id}\n${node.name}\n${node.tokens
+              .map(
+                (token) =>
+                  `${token.amount} ${token.name} / ${token.usdt_amount} usdt`
+              )
+              .join("\n")}`,
+          })
+        );
+      } else {
+        dispatch(
+          toggleTooltip({
+            show: false,
+            left: 0,
+            top: 0,
+            value: "",
+          })
+        );
+      }
+    });
+
+    canvas.addEventListener("dblclick", handleNodeClick);
+    canvas.addEventListener("mousemove", handleNodeHover);
 
     return () => {
-      canvas.removeEventListener("click", handleClick);
+      canvas.removeEventListener("dblclick", handleNodeClick);
+      canvas.removeEventListener("mousemove", handleNodeHover);
     };
-  }, []);
+  }, [nodes]);
 
   useEffect(() => {
     // set dimension of the canvas element
@@ -85,7 +130,7 @@ export const NetworkDiagram = ({
         d3
           .forceLink<Node, Link>(links)
           .id((d) => d.id)
-          .distance((link) => 400)
+          .distance((link) => window.innerWidth / 4)
         // .distance((link) => +link.usdt_amount / 5)
         // .strength(1)
       )
@@ -94,7 +139,9 @@ export const NetworkDiagram = ({
       .force("center", d3.forceCenter(width / 2, height / 2))
       .force(
         "x",
-        d3.forceX((n) => (n.isSender ? 0 : n.isMain ? width / 2 : width))
+        d3.forceX((n) =>
+          n.isSender ? 100 : n.isMain ? width / 2 : width - 100
+        )
       )
       .force(
         "y",
@@ -106,6 +153,10 @@ export const NetworkDiagram = ({
         drawNetwork(context, width, height, nodes, links);
       });
   }, [width, height, nodes, links]);
+
+  if (!data) {
+    return null;
+  }
 
   return (
     <div>

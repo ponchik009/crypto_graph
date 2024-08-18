@@ -5,6 +5,8 @@
   align-items: center;
 
   height: 100%;
+
+  position: relative;
 }
 
 canvas {

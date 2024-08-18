@@ -9,7 +9,7 @@ const labels = [
   },
   {
     name: "bridge",
-    color: "yellow",
+    color: "aqua",
   },
   {
     name: "user",
@@ -21,7 +21,7 @@ export const Labels = () => {
   return (
     <div className={styles.Labels}>
       {labels.map((l) => (
-        <div className={styles.Label}>
+        <div className={styles.Label} key={l.name}>
           <div
             className={styles["Label-color"]}
             style={{ backgroundColor: l.color }}

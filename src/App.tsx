@@ -10,7 +10,7 @@ import {
   selectInputValue,
   updateInputValue,
 } from "./store/graphReducer/graphReducer";
-import { useGetGraphByAddressQuery } from "./api/api";
+import { Tooltip } from "./components/Tooltip/Tooltip";
 
 function App() {
   const dispatch = useDispatch();
@@ -20,13 +20,17 @@ function App() {
     dispatch(updateInputValue(e.target.value));
   };
 
-  const { data } = useGetGraphByAddressQuery(inputValue);
-
   return (
     <div className="App">
       <input type="text" value={inputValue} onChange={handleInputChange} />
       <Labels />
-      {data && <NetworkDiagram data={data} width={1200} height={800} />}
+
+      <NetworkDiagram
+        width={window.innerWidth - 200}
+        height={window.innerHeight * 0.8}
+      />
+
+      <Tooltip />
     </div>
   );
 }

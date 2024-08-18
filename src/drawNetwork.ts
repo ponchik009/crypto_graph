@@ -39,7 +39,7 @@ export const drawNetwork = (
     context.moveTo(node.x, node.y);
     context.arc(node.x, node.y, RADIUS, 0, 2 * Math.PI);
     context.fillStyle =
-      node.type === "cex" ? "black" : node.type === "user" ? "red" : "yellow";
+      node.type === "cex" ? "black" : node.type === "user" ? "red" : "aqua";
     context.fill();
 
     // Label
